@@ -18,9 +18,39 @@
 # fork of pjsip/pjproject), not arbitrary third-party ones.
 set -euo pipefail
 
+# Set when the caller explicitly points us at a directory, so we know not
+# to override it with an auto-detected checkout below.
+PJ_DIR_EXPLICIT="${PJ_DIR:-}"
 PJ_DIR="${PJ_DIR:-/tmp/pjproject}"
 PJ_VERSION="${PJ_VERSION:-2.17}"
 PJ_REPO_URL="${PJ_REPO_URL:-https://github.com/pjsip/pjproject}"
+
+# Look for a PJPROJECT source tree already checked out somewhere in the
+# container (e.g. an agent sandbox that pre-clones the repo into some
+# workspace directory) so we can build that instead of hitting the
+# network. Identified by a file path unique enough to PJPROJECT's layout
+# that false positives are essentially impossible.
+find_existing_pjproject_checkout() {
+    local marker="pjsip/include/pjsip/sip_transaction.h"
+    local hit candidate
+    while IFS= read -r hit; do
+        candidate="${hit%/$marker}"
+        if [[ -x "$candidate/configure" && -d "$candidate/pjlib/include/pj" ]]; then
+            echo "$candidate"
+            return 0
+        fi
+    done < <(find / \( -path /proc -o -path /sys -o -path /dev \) -prune -o \
+                   -type f -path "*/$marker" -print 2>/dev/null)
+    return 1
+}
+
+if [[ -z "$PJ_DIR_EXPLICIT" && ! -d "$PJ_DIR" ]]; then
+    existing="$(find_existing_pjproject_checkout || true)"
+    if [[ -n "$existing" ]]; then
+        echo "Found existing PJPROJECT checkout at $existing, building that instead of cloning."
+        PJ_DIR="$existing"
+    fi
+fi
 
 if [[ ! -d "$PJ_DIR" ]]; then
     echo "Cloning PJPROJECT from $PJ_REPO_URL to $PJ_DIR ..."

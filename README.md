@@ -51,10 +51,13 @@ Requirements:
 - Linux: a C/C++ toolchain (`build-essential` or equivalent), OpenSSL
   development headers (e.g. `libssl-dev` on Debian/Ubuntu), CMake, git.
 
-By default this clones `pjsip/pjproject` from GitHub. In sandboxed
-environments that only allow git/network access to repos you own (e.g.
-some cloud CI or agent sandboxes), fork `pjsip/pjproject` to your own
-account first, then point the script at your fork:
+If a PJPROJECT checkout already exists somewhere in the container (e.g. an
+agent sandbox that pre-clones the repo into a workspace directory), the
+script finds and builds that instead of fetching anything. Otherwise it
+clones `pjsip/pjproject` from GitHub. In sandboxed environments that only
+allow git/network access to repos you own (e.g. some cloud CI or agent
+sandboxes) and have no pre-existing checkout, fork `pjsip/pjproject` to
+your own account first, then point the script at your fork:
 
 ```bash
 PJ_REPO_URL=https://github.com/<you>/pjproject ./scripts/build_pjproject.sh
