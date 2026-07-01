@@ -1,9 +1,9 @@
-[![CI (macOS)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-macos.yml/badge.svg?branch=main)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-macos.yml)
-[![CI (Linux)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-linux.yml/badge.svg?branch=main)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-linux.yml)
-[![License](https://img.shields.io/github/license/Crazor/fritz-rctd?logo=gplv3)](LICENSE)
-![Static Badge](https://img.shields.io/badge/FRITZBox-blue?logo=avm)
-![Static Badge](https://img.shields.io/badge/C%2B%2B-17-blue?logo=cplusplus)
-![Static Badge](https://img.shields.io/badge/made%20with-Claude%20Code-orange?logo=claudecode)
+[![CI (macOS)](https://img.shields.io/github/actions/workflow/status/Crazor/fritz-rctd/ci-macos.yml?branch=main&style=for-the-badge&label=CI%20%28macOS%29&logo=apple)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-macos.yml)
+[![CI (Linux)](https://img.shields.io/github/actions/workflow/status/Crazor/fritz-rctd/ci-linux.yml?branch=main&style=for-the-badge&label=CI%20%28Linux%29&logo=linux)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-linux.yml)
+[![License](https://img.shields.io/github/license/Crazor/fritz-rctd?style=for-the-badge&logo=gplv3)](LICENSE)
+![Static Badge](https://img.shields.io/badge/FRITZBox-blue?style=for-the-badge&logo=avm)
+![Static Badge](https://img.shields.io/badge/C%2B%2B-17-blue?style=for-the-badge&logo=cplusplus)
+![Static Badge](https://img.shields.io/badge/made%20with-Claude%20Code-orange?style=for-the-badge&logo=claudecode)
 
 # FRITZ!Box Reverse Click-to-Dial (fritz-rctd)
 
