@@ -18,14 +18,33 @@ if(NOT EXISTS "${PJ_DIR}/pjsip/include/pjsua2.hpp")
         "Run scripts/build_pjproject.sh first, or set PJ_DIR.")
 endif()
 
+# PJPROJECT's own build tags every library with its autoconf target name
+# (e.g. libpjsip-x86_64-pc-linux-gnu.a) - pull that exact string out of
+# build.mak instead of matching it with a glob wildcard. A wildcard here
+# is ambiguous: e.g. lib${name}-*.a for name=pjsip also matches
+# libpjsip-simple-*.a and libpjsip-ua-*.a (and for name=pjmedia also
+# matches libpjmedia-audiodev/-codec/-videodev-*.a), so the first
+# alphabetical match silently isn't the library that was asked for.
+if(NOT EXISTS "${PJ_DIR}/build.mak")
+    message(FATAL_ERROR
+        "${PJ_DIR}/build.mak not found - incomplete PJPROJECT build?")
+endif()
+file(STRINGS "${PJ_DIR}/build.mak" _target_name_line REGEX "^export TARGET_NAME[ \t]*:=")
+if(NOT _target_name_line)
+    message(FATAL_ERROR
+        "Could not find TARGET_NAME in ${PJ_DIR}/build.mak")
+endif()
+string(REGEX REPLACE "^export TARGET_NAME[ \t]*:=[ \t]*([^ \t]+).*" "\\1"
+       PJ_TARGET_NAME "${_target_name_line}")
+
 # Link statically against the .a archives (not the shared libraries), so
 # the finished executable runs without any DYLD_LIBRARY_PATH/LD_LIBRARY_PATH
 # gymnastics and can be invoked freely from any calling process.
 function(find_pj_static_lib outvar name)
-    file(GLOB _matches "${PJ_DIR}/*/lib/lib${name}-*.a")
+    file(GLOB _matches "${PJ_DIR}/*/lib/lib${name}-${PJ_TARGET_NAME}.a")
     list(LENGTH _matches _count)
     if(_count EQUAL 0)
-        message(FATAL_ERROR "lib${name}-*.a not found under ${PJ_DIR} - incomplete build?")
+        message(FATAL_ERROR "lib${name}-${PJ_TARGET_NAME}.a not found under ${PJ_DIR} - incomplete build?")
     endif()
     list(GET _matches 0 _first)
     set(${outvar} ${_first} PARENT_SCOPE)
@@ -47,6 +66,12 @@ endforeach()
 
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
+
+if(NOT APPLE)
+    # PJLIB's GUID generator (guid_uuid.c) calls into libuuid on Linux;
+    # macOS uses a different backend (CFUUID) so this isn't needed there.
+    find_library(UUID_LIBRARY uuid REQUIRED)
+endif()
 
 add_executable(fritz-rctd src/fritz_rctd.cpp)
 
@@ -89,6 +114,7 @@ else()
         -Wl,--end-group
         OpenSSL::SSL OpenSSL::Crypto
         Threads::Threads
+        ${UUID_LIBRARY}
         m
     )
 endif()

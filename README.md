@@ -142,11 +142,11 @@ same code.
 
 ## Notes
 
-- Only built and verified on macOS so far. The Linux build path
-  (`CMakeLists.txt`'s non-Apple branch, `scripts/build_pjproject.sh`'s
-  non-Darwin branch) was written against PJPROJECT's own documented Linux
-  build rules but hasn't been run end-to-end on a Linux machine yet -
-  please report an issue if it doesn't build cleanly.
+- Builds and runs on Linux (verified: builds cleanly, initializes
+  pjsua2, and correctly reports `REGISTRATION_FAILED` against an
+  unreachable domain), in addition to macOS. Call handling against a
+  real FRITZ!Box has only been verified on macOS so far - please report
+  an issue if the actual call flow behaves differently on Linux.
 - Only tested against one FRITZ!Box firmware/device type (7590 AX on 8.20)
   for Call A (a SIP extension) and DECT phones. Behavior on analog phones
   or other firmware versions (number format, final-NOTIFY behavior,
