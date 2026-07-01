@@ -1,8 +1,9 @@
-![Static Badge](https://img.shields.io/badge/FRITZBox-blue?logo=avm)
-![Static Badge](https://img.shields.io/badge/C%2B%2B-17-blue?logo=cplusplus)
-![Static Badge](https://img.shields.io/badge/license-GPLv3%2B-blue?logo=gplv3)
 [![CI (macOS)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-macos.yml/badge.svg?branch=main)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-macos.yml)
 [![CI (Linux)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-linux.yml/badge.svg?branch=main)](https://github.com/Crazor/fritz-rctd/actions/workflows/ci-linux.yml)
+[![License](https://img.shields.io/github/license/Crazor/fritz-rctd?logo=gplv3)](LICENSE)
+![Static Badge](https://img.shields.io/badge/FRITZBox-blue?logo=avm)
+![Static Badge](https://img.shields.io/badge/C%2B%2B-17-blue?logo=cplusplus)
+![Static Badge](https://img.shields.io/badge/made%20with-Claude%20Code-orange?logo=claudecode)
 
 # FRITZ!Box Reverse Click-to-Dial (fritz-rctd)
 
