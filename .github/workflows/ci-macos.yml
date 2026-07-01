@@ -1,0 +1,66 @@
+name: CI (macOS)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-smoke-test:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: brew install cmake openssl@3
+
+      - name: Cache PJPROJECT build
+        id: pjproject-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/pjproject
+          key: pjproject-macos-${{ hashFiles('scripts/build_pjproject.sh') }}
+
+      - name: Build PJPROJECT
+        if: steps.pjproject-cache.outputs.cache-hit != 'true'
+        run: ./scripts/build_pjproject.sh
+
+      - name: Configure
+        run: cmake -S . -B build -DPJ_DIR=/tmp/pjproject
+
+      - name: Build
+        run: cmake --build build
+
+      # Sanity check that the stack (pjsua2 init, transport, registration)
+      # actually runs and fails cleanly instead of hanging: point it at
+      # 192.0.2.1, a reserved documentation-only address (RFC 5737) that
+      # will never respond, so registration genuinely has to run out the
+      # clock rather than fail fast on a connection error. A short
+      # reg-timeout keeps the job quick; the step timeout is a backstop
+      # in case the binary hangs instead of exiting.
+      - name: Smoke test against a non-existent FRITZ!Box
+        timeout-minutes: 2
+        env:
+          FRITZ_RCTD_SIP_DOMAIN: 192.0.2.1
+          FRITZ_RCTD_SIP_USERNAME: "620"
+          FRITZ_RCTD_SIP_PASSWORD: dummy
+          FRITZ_RCTD_REG_TIMEOUT_SEC: "5"
+        run: |
+          set +e
+          output=$(build/fritz-rctd --own '**621' --target 004912345678)
+          status=$?
+          set -e
+
+          echo "$output"
+          echo "exit code: $status"
+
+          if [ "$status" -ne 9 ]; then
+            echo "::error::Expected exit code 9 (EXIT_REGISTRATION_FAILED), got $status"
+            exit 1
+          fi
+          if ! echo "$output" | grep -q '"code":"REGISTRATION_FAILED"'; then
+            echo "::error::Expected REGISTRATION_FAILED in JSON output"
+            exit 1
+          fi
