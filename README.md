@@ -102,6 +102,7 @@ flag, so it can't leak into another user's process listing.
 | `FRITZ_RCTD_TRANSFER_TIMEOUT_SEC` | no | `--transfer-timeout` | Default `10` |
 | `FRITZ_RCTD_REG_TIMEOUT_SEC` | no | `--reg-timeout` | Default `10` |
 | `FRITZ_RCTD_LOG_LEVEL` | no | `--log-level` | Default `3` |
+| `FRITZ_RCTD_DISPLAY` | no | `--display` | Caller ID display name for Call A |
 
 Where a variable has a matching CLI flag, the flag always takes
 precedence over the environment variable. `--local-port` (local SIP UDP
@@ -130,6 +131,19 @@ numbers as `**621`. Only the format **with** both leading asterisks
 accepted by the FRITZ!Box (183 Session Progress) but the phone never
 actually rings. In a shell, `**621` needs quotes, otherwise the shell
 expands `*` as a glob pattern.
+
+**`--display NAME`** sets the caller ID display name shown when Call A
+(the own extension) rings - useful for passing context from the calling
+program, e.g. a customer or ticket reference, so it's visible on the
+phone before answering:
+
+```bash
+build/fritz-rctd --own '**621' --target 004912345678 --display 'Callback: Jane Doe'
+```
+
+This only affects Call A. Once the attended transfer happens, the
+FRITZ!Box presents its own configured identity to the external target -
+this program has no influence over that anymore.
 
 **`--target-timeout SECONDS`** overrides `FRITZ_RCTD_TARGET_TIMEOUT_SEC`
 for a single run. It only bounds the wait until Call B builds a SIP

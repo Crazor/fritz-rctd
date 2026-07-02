@@ -142,6 +142,7 @@ struct Options {
     std::string password;
     std::string ownTarget;
     std::string targetNumber;
+    std::string displayName;
     int localPort = 0;
     int ownTimeoutSec = 30;
     int targetTimeoutSec = 30;
@@ -429,6 +430,7 @@ bool applyEnvDefaults(Options &opts, std::string &errorMsg)
     opts.domain = envOrDefault("FRITZ_RCTD_SIP_DOMAIN", opts.domain);
     opts.username = envOrDefault("FRITZ_RCTD_SIP_USERNAME", opts.username);
     opts.password = envOrDefault("FRITZ_RCTD_SIP_PASSWORD", opts.password);
+    opts.displayName = envOrDefault("FRITZ_RCTD_DISPLAY", opts.displayName);
     return applyEnvInt("FRITZ_RCTD_SIP_PORT", opts.sipPort, errorMsg) &&
            applyEnvInt("FRITZ_RCTD_OWN_TIMEOUT_SEC", opts.ownTimeoutSec, errorMsg) &&
            applyEnvInt("FRITZ_RCTD_TARGET_TIMEOUT_SEC", opts.targetTimeoutSec, errorMsg) &&
@@ -473,6 +475,13 @@ const char *kHelpText =
     "  --reg-timeout SECONDS           Default 10 (FRITZ_RCTD_REG_TIMEOUT_SEC)\n"
     "  --log-level 0-6                 Default 3 (FRITZ_RCTD_LOG_LEVEL)\n"
     "  --local-port PORT               Local SIP UDP port, default 0 (=random)\n"
+    "  --display NAME                  Caller ID display name shown when Call\n"
+    "                                  A (the own extension) rings, e.g. a\n"
+    "                                  customer/ticket reference from the\n"
+    "                                  calling program (FRITZ_RCTD_DISPLAY).\n"
+    "                                  Only affects the own extension - the\n"
+    "                                  FRITZ!Box presents its own identity to\n"
+    "                                  the external target after transfer.\n"
     "\n"
     "  --help, -h                      Show this help\n";
 
@@ -508,6 +517,10 @@ bool parseArgs(int argc, char **argv, Options &opts, std::string &errorMsg)
             const char *v = needValue("--target");
             if (!v) return false;
             opts.targetNumber = v;
+        } else if (arg == "--display") {
+            const char *v = needValue("--display");
+            if (!v) return false;
+            opts.displayName = v;
         } else if (arg == "--local-port") {
             const char *v = needValue("--local-port");
             if (!v) return false;
@@ -570,6 +583,33 @@ std::string sipUri(const std::string &user, const std::string &domain,
     return out.str();
 }
 
+/* Wraps `uri` in a SIP name-addr with `displayName` as the quoted display
+ * name (`"Display Name" <sip:...>`), for use as an account's idUri so it
+ * shows up as the caller ID when that account places a call - here, when
+ * Call A rings the own extension. Rejects CR/LF in the display name
+ * outright, since those could otherwise inject additional SIP headers
+ * into the From line; `"` and `\` are backslash-escaped per the SIP
+ * quoted-string grammar (RFC 3261). */
+bool sipNameAddr(const std::string &displayName, const std::string &uri,
+                  std::string &outNameAddr, std::string &errorMsg)
+{
+    if (displayName.find('\r') != std::string::npos ||
+        displayName.find('\n') != std::string::npos) {
+        errorMsg = "--display/FRITZ_RCTD_DISPLAY must not contain line breaks";
+        return false;
+    }
+    std::string escaped;
+    escaped.reserve(displayName.size());
+    for (char c : displayName) {
+        if (c == '"' || c == '\\') {
+            escaped += '\\';
+        }
+        escaped += c;
+    }
+    outNameAddr = "\"" + escaped + "\" <" + uri + ">";
+    return true;
+}
+
 }  // namespace
 
 int main(int argc, char **argv)
@@ -598,6 +638,20 @@ int main(int argc, char **argv)
     if (!validateRequired(opts, argError)) {
         emitResult("error", "BAD_ARGS", argError);
         return EXIT_BAD_ARGS;
+    }
+
+    // Own-account idUri: plain "sip:user@domain" normally, or a SIP
+    // name-addr with a caller-ID display name if --display/
+    // FRITZ_RCTD_DISPLAY was given. This is the identity Call A presents
+    // when ringing the own extension (see kHelpText).
+    std::string ownIdUri = sipUri(opts.username, opts.domain, opts.sipPort);
+    if (!opts.displayName.empty()) {
+        std::string quoted;
+        if (!sipNameAddr(opts.displayName, ownIdUri, quoted, argError)) {
+            emitResult("error", "BAD_ARGS", argError);
+            return EXIT_BAD_ARGS;
+        }
+        ownIdUri = quoted;
     }
 
     Endpoint ep;
@@ -633,7 +687,7 @@ int main(int argc, char **argv)
 
         RegWaitState regState;
         AccountConfig accCfg;
-        accCfg.idUri = sipUri(opts.username, opts.domain, opts.sipPort);
+        accCfg.idUri = ownIdUri;
         accCfg.regConfig.registrarUri =
             "sip:" + opts.domain +
             (opts.sipPort != 5060 ? ":" + std::to_string(opts.sipPort) : "");
